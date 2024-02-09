@@ -3,22 +3,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { ArrowUpTrayIcon, XMarkIcon } from '@heroicons/react/24/solid'
 
-const Dropzone = ({ className }) => {
+const Dropzone = ({ className, images, setImages }) => {
   const [files, setFiles] = useState([])
 
   const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
+    console.log(acceptedFiles);
     if (acceptedFiles?.length) {
-      console.log(acceptedFiles)
       acceptedFiles.map(file => Object.assign(file, { preview: URL.createObjectURL(file)}));
-      acceptedFiles.map(async file => {
-        let reader = new FileReader
-        let blob = await fetch(file.preview).then(r => r.blob());
-        console.log(blob)
-        reader.readAsBinaryString(blob)
-        file['data'] = reader.result;
-      });
-
-      console.log(acceptedFiles)
       setFiles(previousFiles => [
         ...previousFiles,
         ...acceptedFiles
@@ -30,7 +21,6 @@ const Dropzone = ({ className }) => {
     accept: {
       'image/*': []
     },
-    maxSize: 1024 * 1000,
     onDrop
   })
 
@@ -39,34 +29,17 @@ const Dropzone = ({ className }) => {
     return () => files.forEach(file => URL.revokeObjectURL(file.preview))
   }, [files])
 
-  const removeFile = name => {
-    setFiles(files => files.filter(file => file.name !== name))
-  }
-
-  const removeAll = () => {
-    setFiles([])
-  }
-
   const handleSubmit = async e => {
     e.preventDefault()
 
     if (!files?.length) return
-
-    const formData = new FormData()
-    files.forEach(file => formData.append('files[]', file))
-
-    const filesData = files.map(file => ({
-      name: file.name,
-      data: file
-    }));
-
-    const data = await fetch('/api/images/create', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ files: filesData }),
-    }).then(res => res.json());
+    let array = [...images];
+    files.map(file => {
+      array.push(file.name);
+    });
+    console.log(array)
+    setImages(array);
+    setFiles([]);
   }
 
   return (
@@ -89,24 +62,13 @@ const Dropzone = ({ className }) => {
 
       {/* Preview */}
       <section className='mt-10'>
-
-
-
-
         <div className='flex gap-4'>
           <h2 className='title text-3xl font-semibold'>Preview</h2>
-          <button
-            type='button'
-            onClick={removeAll}
-            className='mt-1 text-[12px] uppercase tracking-wider font-bold text-neutral-500 border border-secondary-400 rounded-md px-3 hover:bg-secondary-400 hover:text-white transition-colors'
-          >
-            Remove all files
-          </button>
           <button
             type='submit'
             className='ml-auto mt-1 text-[12px] uppercase tracking-wider font-bold text-neutral-500 border border-purple-400 rounded-md px-3 hover:bg-purple-400 hover:text-white transition-colors'
           >
-            Upload to Cloudinary
+            Upload to Data Base
           </button>
         </div>
 
@@ -127,16 +89,6 @@ const Dropzone = ({ className }) => {
                 }}
                 className='h-full w-full object-contain rounded-md'
               />
-              <button
-                type='button'
-                className='w-7 h-7 border border-secondary-400 bg-secondary-400 rounded-full flex justify-center items-center absolute -top-3 -right-3 hover:bg-white transition-colors'
-                onClick={() => removeFile(file.name)}
-              >
-                <XMarkIcon className='w-5 h-5 fill-white hover:fill-secondary-400 transition-colors' />
-              </button>
-              <p className='mt-2 text-neutral-500 text-[12px] font-medium'>
-                {file.name}
-              </p>
             </li>
           ))}
         </ul>

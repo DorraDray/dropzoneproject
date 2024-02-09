@@ -1,21 +1,35 @@
 import Dropzone from '@/components/Dropzone'
 import Image from 'next/image'
 import { XMarkIcon } from '@heroicons/react/24/solid'
-import { sql } from "@vercel/postgres";
 import { useEffect, useState } from 'react'
 
 const Homepage =  () => {
 
   const [images, setImages] = useState([]);
+  const [hasMounted, setHasMounted] = useState(false);
 
   useEffect(() => {
-    const fetchDataAsync = async () => {
-      const images = await sql`SELECT * FROM imagesDZ`;
-      setImages(images.rows);
-    };
-
-    fetchDataAsync();
+    if (localStorage.getItem("images")) {
+      setImages(JSON.parse(localStorage.getItem("images")));
+    }
   }, []);
+
+  useEffect(() => {
+    if (hasMounted) {
+      localStorage.setItem("images", JSON.stringify(images));
+    }
+    setHasMounted(true);
+  }, [images, hasMounted]);
+
+  const removeFile = (name) => {
+    let array = [...images];
+    let index = array.indexOf(name);
+    if (index !== -1) {
+      array.splice(index, 1);
+      console.log('removeFile')
+      setImages(array);
+    }
+  }
 
   return (
     <section className='section'>
@@ -24,8 +38,8 @@ const Homepage =  () => {
           {images.map(image => (
             <li key={image.id} className='relative h-32 rounded-md shadow-lg'>
               <Image
-                src={image.name}
-                alt={image.name}
+                src={`/../public/images/${image}`}
+                alt={image}
                 width={50}
                 height={50}
                 className='h-full w-full object-contain rounded-md'
@@ -33,7 +47,7 @@ const Homepage =  () => {
               <button
                 type='button'
                 className='w-7 h-7 border border-secondary-400 bg-secondary-400 rounded-full flex justify-center items-center absolute -top-3 -right-3 hover:bg-white transition-colors'
-                onClick={() => removeFile(file.id)}
+                onClick={() => removeFile(image)}
               >
                 <XMarkIcon className='w-5 h-5 fill-white hover:fill-secondary-400 transition-colors' />
               </button>
@@ -42,7 +56,7 @@ const Homepage =  () => {
         </ul>
 
         <h1 className='title text-3xl font-bold'>Upload Files</h1>
-        <Dropzone className='p-16 mt-10 border border-neutral-200' />
+        <Dropzone className='p-16 mt-10 border border-neutral-200' images={images} setImages={setImages} />
       </div>
     </section>
   )
